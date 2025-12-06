@@ -4,8 +4,8 @@ to your internet PC or virtual server.
 
 Usage:
 1. run client in your internal PC.
-2. run server inn your vps or another pc with internet IP address.
-3. if you run cmd capture screen command then you will auto receive your clinet PC screen capture image and save to current folder.
+2. run server in your vps or another pc with internet IP address.
+3. if you run cmd capture screen command then you will auto receive your client PC screen capture image and save to current folder.
 4. type help get more details in command line.
 5. they will automatically connect and client will keep try reconnect if connection was broken.
 
