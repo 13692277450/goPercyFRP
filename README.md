@@ -9,8 +9,9 @@ Usage:
 1. run client in your internal PC.
 2. run server in your vps or another pc with internet IP address.
 3. if you run cmd capture screen command then you will auto receive your client PC screen capture image and save to current folder.
-4. type help get more details in command line.
-5. they will automatically connect and client will keep try reconnect if connection was broken.
+4. history command support
+5. type help get more details in command line.
+6. they will automatically connect and client will keep try reconnect if connection was broken.
 
 Client:
 
