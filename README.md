@@ -9,8 +9,9 @@ Usage:
 2. run server in your vps or another pc with internet IP address.
 3. if you run cmd capture screen command then you will auto receive your client PC screen capture image and save to current folder.
 4. history command support
-5. type help get more details in command line.
-6. they will automatically connect and client will keep try reconnect if connection was broken.
+5. run "send d:\download\text.txt" then client will send this file to your server side.
+6. type help get more details in command line.
+7. they will automatically connect and client will keep try reconnect if connection was broken.
 
 Client:
 
