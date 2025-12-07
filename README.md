@@ -2,7 +2,7 @@
 
 
 # goPercyFRP
-It's a funny and tiny project, A golang create tool to remote control your internal / home Windows / Linux /MacOS PC with command line if you don't want to install any remote desktop softwware, this application only send cmd or powershell command to your internet PC or virtual server.
+It's a funny and tiny project, A tool created by golang which can remote control your internal / home Windows / Linux /MacOS PC with command line if you don't want to install any remote desktop softwware or bandwidth limited to use remote desktop UI, this application only provide send cmd or powershell command to your internet PC or virtual server.
 
 Usage:
 1. run client in your internal PC.
